@@ -418,7 +418,7 @@ func (x *HsuanFuzz) initializeDependencyYAML(p string) {
 		if x.openAPI.Paths[path].GetOperation(http.MethodPost) != nil {
 			dependencyPost := DependencyPost{}
 			dependencyPost.Flows = append(dependencyPost.Flows, &DependencyPostItem{Method: http.MethodGet})
-			dependencyPost.Flows = append(dependencyPost.Flows, &DependencyPostItem{Method: http.MethodGet})
+			dependencyPost.Flows = append(dependencyPost.Flows, &DependencyPostItem{Method: http.MethodPut})
 			dependencyPost.Flows = append(dependencyPost.Flows, &DependencyPostItem{Method: http.MethodPatch})
 			dependencyPost.Flows = append(dependencyPost.Flows, &DependencyPostItem{Method: http.MethodDelete})
 

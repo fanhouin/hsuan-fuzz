@@ -16,7 +16,7 @@ func (x *HsuanFuzz) generateGrammar() {
 	// Get path order
 	orders := map[string][]string{}
 	for path, info := range x.dependency.Paths {
-
+		// orders 記錄每一個path的dependent，為一個array
 		orders[path] = append(x.getOperationFlows(info), path)
 
 	}
@@ -30,10 +30,13 @@ func (x *HsuanFuzz) generateGrammar() {
 	// Use path order to get operations
 	nodes := []*base.Node{}
 	group := uint32(1)
+	// sortedpaths是一開始openapi收集到的path
 	for _, p := range x.sortedPaths {
 
 		dels := []*base.Node{}
 		for _, path := range orders[p] {
+			// operationsOrder是request seq，已經是fix的是seq
+			// TODO: 不做fix?
 			for _, operation := range operationsOrder {
 				if operation == http.MethodDelete {
 					dels = append(x.newNode(group, path, operation), dels...)
@@ -52,7 +55,7 @@ func (x *HsuanFuzz) generateGrammar() {
 }
 
 func (x *HsuanFuzz) newNode(group uint32, path string, method string) []*base.Node {
-
+	// operatoin是直接openapi中取的operation
 	operation := x.openAPI.Paths[path].GetOperation(method)
 	if operation == nil {
 		return nil
@@ -63,9 +66,10 @@ func (x *HsuanFuzz) newNode(group uint32, path string, method string) []*base.No
 	// 	panic("Invalid operation.")
 	// }
 
-	// Priority of operation parameters is greater than pathitem.
+	// Priority of operation parameters is greater than paths[path]->PathItem->parameters.
 	parameterRefs := map[string]*openapi3.ParameterRef{}
 	for _, parameterRef := range append(x.openAPI.Paths[path].Parameters, operation.Parameters...) {
+		// param的名字當成key, value是param
 		parameterRefs[parameterRef.Value.Name] = parameterRef
 	}
 
@@ -91,6 +95,7 @@ func (x *HsuanFuzz) getRequestParameters(ps map[string]*openapi3.ParameterRef, r
 
 	requests := []*base.Request{}
 
+	// sorted把map中的path排回原本的順序
 	sorted := []string{}
 	for path := range ps {
 		sorted = append(sorted, path)
@@ -101,6 +106,7 @@ func (x *HsuanFuzz) getRequestParameters(ps map[string]*openapi3.ParameterRef, r
 
 		ref := ps[c]
 
+		// TODO: 可以用info.yml
 		// bool, float64, int, string
 		ex, err := example.GetParameterExample(example.ModeRequest, ref.Value)
 		if err != nil {
@@ -122,6 +128,7 @@ func (x *HsuanFuzz) getRequestParameters(ps map[string]*openapi3.ParameterRef, r
 		}
 
 		// StructValue
+		// proto表示要create一個struct出來, 包含param的名字、value
 		value, err := structpb.NewStruct(map[string]interface{}{ref.Value.Name: v.AsInterface()})
 		if err != nil {
 			panic(err)
@@ -152,6 +159,7 @@ func (x *HsuanFuzz) getRequestParameters(ps map[string]*openapi3.ParameterRef, r
 				}
 
 				// base64 encode
+				// 把body中含有string的field都變成base64
 				svs := []*structpb.Value{}
 				for a, b := range v.GetStructValue().GetFields() {
 					_, sv := getKeyValue(a, b)

@@ -107,6 +107,7 @@ func getKeyValue(k string, x *structpb.Value) ([]string, []*structpb.Value) {
 		ks = append(ks, k)
 		vs = append(vs, x)
 
+	// recursive struct
 	case *structpb.Value_StructValue:
 
 		for a, b := range x.GetStructValue().GetFields() {
@@ -117,6 +118,7 @@ func getKeyValue(k string, x *structpb.Value) ([]string, []*structpb.Value) {
 
 		}
 
+	// recursive list less three time? WHY?
 	case *structpb.Value_ListValue:
 
 		for _, c := range x.GetListValue().GetValues() {
