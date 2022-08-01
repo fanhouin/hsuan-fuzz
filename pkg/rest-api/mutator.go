@@ -30,6 +30,7 @@ func (x *HsuanFuzz) getStringValue(value *structpb.Value, decode, appendList boo
 
 		if decode {
 
+			// 在grammar時已經encode成base64
 			data, err := base64.StdEncoding.DecodeString(value.GetStringValue())
 			if err != nil {
 
@@ -244,6 +245,7 @@ func (x *HsuanFuzz) adoptStrategies() {
 				for _, item := range x.dependency.Paths[node.Path].Items {
 
 					// Get id from the previous response
+					// 目前的request某個要dependent的值要從上個response的取值
 					if body, ok := (*x.groupInfo)[node.Group][item.Source.Path]; ok {
 
 						// Convert dependency.yml item.Source.Key to fastjson keys
@@ -295,6 +297,7 @@ func (x *HsuanFuzz) adoptStrategies() {
 
 						case *structpb.Value_StringValue:
 
+							// valJSON.GetStringBytes是取json中string的ascii?
 							v, err := structpb.NewValue(valJSON.GetStringBytes())
 							if err != nil {
 								panic(err)
@@ -357,14 +360,18 @@ func (x *HsuanFuzz) adoptStrategies() {
 
 				case *structpb.Value_NumberValue:
 					if random == 0 {
+						// bool
 						if len(v) > 0 {
 							*value = *structpb.NewBoolValue((v[0] % 2) == 0)
+							// bool(false)
 						} else {
 							*value = *structpb.NewBoolValue(false)
 						}
 					} else {
+						// number
 						if len(v) > 0 {
 							*value = *structpb.NewNumberValue(float64(v[0]))
+							// zero num
 						} else {
 							*value = *structpb.NewNumberValue(0)
 						}
@@ -372,14 +379,18 @@ func (x *HsuanFuzz) adoptStrategies() {
 
 				case *structpb.Value_StringValue:
 					if random == 0 {
+						// number
 						if len(v) > 0 {
 							*value = *structpb.NewNumberValue(float64(v[0]))
+							// zero number
 						} else {
 							*value = *structpb.NewNumberValue(0)
 						}
 					} else {
+						// bool
 						if len(v) > 0 {
 							*value = *structpb.NewBoolValue((v[0] % 2) == 0)
+							// bool(false)
 						} else {
 							*value = *structpb.NewBoolValue(false)
 						}
@@ -392,10 +403,13 @@ func (x *HsuanFuzz) adoptStrategies() {
 							panic(err)
 						}
 
+						// base64 string
 						*value = *structpb.NewStringValue(v.GetStringValue())
 					} else {
+						// number
 						if len(v) > 0 {
 							*value = *structpb.NewNumberValue(float64(v[0]))
+							// zero num
 						} else {
 							*value = *structpb.NewNumberValue(0)
 						}

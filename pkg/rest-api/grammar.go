@@ -73,8 +73,10 @@ func (x *HsuanFuzz) newNode(group uint32, path string, method string) []*base.No
 		parameterRefs[parameterRef.Value.Name] = parameterRef
 	}
 
+	// 取出一個request中的所有參數
 	requests := x.getRequestParameters(parameterRefs, operation.RequestBody)
 
+	// "default", "401", "403", "500", 如果有把它數進去
 	exclude := 0
 	for _, code := range excludeCodes {
 		if _, ok := operation.Responses[code]; ok {
