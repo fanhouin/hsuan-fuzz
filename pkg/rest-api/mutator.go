@@ -12,6 +12,9 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+/*
+ * Change the any value to string, include base64 to string
+ */
 func (x *HsuanFuzz) getStringValue(value *structpb.Value, decode, appendList bool) string {
 
 	v := ""
@@ -96,6 +99,10 @@ func (x *HsuanFuzz) getStringValue(value *structpb.Value, decode, appendList boo
 	return v
 }
 
+/*
+ * Get proto struct's key and value
+ * Recursively find the primitive type
+ */
 func getKeyValue(k string, x *structpb.Value) ([]string, []*structpb.Value) {
 
 	ks := []string{}
@@ -194,6 +201,12 @@ func (x *HsuanFuzz) isRelated(path string, key string) bool {
 	return false
 }
 
+/*
+ * The main mutator
+ * 1. random choose two parameters to modify
+ * 2. id: mutate value
+ * 3. other: delete / change type / mutate byte
+ */
 func (x *HsuanFuzz) adoptStrategies() {
 
 	for _, node := range x.grammar.Nodes {

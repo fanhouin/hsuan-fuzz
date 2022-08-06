@@ -91,19 +91,19 @@ type DependencyPostItem struct {
 
 // HsuanFuzz is the main structure of fuzzer.
 type HsuanFuzz struct {
-	openAPI     *openapi3.Swagger
-	server      string
-	grammar     *base.Info
-	dependency  Dependency
-	Token       Token
-	groupInfo   *map[uint32]map[string]string
-	methods     int
-	sortedPaths []string
-	corpus      *gofuzz.PersistentSet
-	crashers    *gofuzz.PersistentSet
-	endCov      Coverage
-	queue       []gofuzz.Sig
-	strictMode  bool
+	openAPI     *openapi3.Swagger             // the struct of swagger apec
+	server      string                        // the prefix string of the path
+	grammar     *base.Info                    // the request sequences by operationsOrder
+	dependency  Dependency                    // the dependency of the request sequence
+	Token       Token                         // the token of the service
+	groupInfo   *map[uint32]map[string]string // the hashmap of the response info
+	methods     int                           // the numbers of operations
+	sortedPaths []string                      // the numbers of paths (sorted)
+	corpus      *gofuzz.PersistentSet         // all input data
+	crashers    *gofuzz.PersistentSet         // all error info
+	endCov      Coverage                      // the coverage level of each path
+	queue       []gofuzz.Sig                  // the queue of the corpus
+	strictMode  bool                          // struct mode
 }
 
 // Coverage records the test coverage level of each path.
@@ -150,6 +150,8 @@ func (x *HsuanFuzz) Fuzz(guided bool) error {
 			if err != nil {
 				panic(err)
 			}
+
+			// Save the init seed
 			x.corpus.Add(gofuzz.Artifact{Data: b})
 
 		}
@@ -172,6 +174,8 @@ func (x *HsuanFuzz) Fuzz(guided bool) error {
 		if err != nil {
 			panic(err)
 		}
+
+		// Set the current seed
 		x.grammar = &info
 
 		// Modify
@@ -195,6 +199,7 @@ func (x *HsuanFuzz) Fuzz(guided bool) error {
 
 			fmt.Printf("\r%d: %d %-7s %-100s", i+1, info.Code, info.request.Method, info.request.Path)
 
+			// If the code is error code, save it.
 			if info.Code >= 500 && info.Code != 599 {
 
 				// Set file name
@@ -209,6 +214,7 @@ func (x *HsuanFuzz) Fuzz(guided bool) error {
 				}
 
 				t := time.Now()
+
 				x.crashers.AddDescription([]byte(name), []byte(strconv.Itoa(info.Code)), "code")
 				x.crashers.AddDescription([]byte(name), []byte(t.Format("20060102 150405")), "timestamp")
 				x.crashers.AddDescription([]byte(name), b, "node")
@@ -223,6 +229,7 @@ func (x *HsuanFuzz) Fuzz(guided bool) error {
 		cov := x.getCoverageLevels(mapInfos)
 
 		// Compare with each test coverage level
+		// if increase level, save the new corpus
 		isIncrease, newCov := isIndividualIncrease(cov.Levels, x.endCov.Levels, x.strictMode)
 		if isIncrease {
 
@@ -230,7 +237,7 @@ func (x *HsuanFuzz) Fuzz(guided bool) error {
 			x.endCov.Levels = newCov.Levels
 
 			if guided {
-				// Sava as new corpus
+				// Save as new corpus
 				b, err := proto.Marshal(x.grammar)
 				if err != nil {
 					panic(err)
@@ -263,7 +270,7 @@ func (x *HsuanFuzz) Fuzz(guided bool) error {
 
 }
 
-// New will create a new HsuanFuzz, which is also initialized.
+// New function will create a new HsuanFuzz, which is also initialized.
 func New(openapiPath string, dirPath string, remove bool, strictMode bool) (*HsuanFuzz, error) {
 
 	openAPI, err := openapi3.NewSwaggerLoader().LoadSwaggerFromFile(openapiPath)
@@ -372,6 +379,7 @@ func New(openapiPath string, dirPath string, remove bool, strictMode bool) (*Hsu
 				}
 			}
 		}
+		// TODO: read example file
 
 	}
 
@@ -381,12 +389,14 @@ func New(openapiPath string, dirPath string, remove bool, strictMode bool) (*Hsu
 	x.groupInfo = &r
 	x.corpus = gofuzz.NewPersistentSet(path + "corpus")
 	x.crashers = gofuzz.NewPersistentSet(path + "crashers")
+	// Every time check the coverage, x.endCov used for comparison
 	x.endCov = Coverage{Levels: make([]int, x.methods)}
 	x.strictMode = strictMode
 
 	return x, nil
 }
 
+// init the token yaml file (no any parse)
 func initializeTokenYAML(p string) {
 
 	encoded, err := yaml.Marshal(Token{})
@@ -401,6 +411,11 @@ func initializeTokenYAML(p string) {
 
 }
 
+/*
+ * init the dependency yaml file
+ * 1. init dependency path, bulid a tree
+ * 2. record the operations of each path
+ */
 func (x *HsuanFuzz) initializeDependencyYAML(p string) {
 
 	dependency := Dependency{}
@@ -412,9 +427,13 @@ func (x *HsuanFuzz) initializeDependencyYAML(p string) {
 		items := []*DependencyItem{}
 		items = append(items, &DependencyItem{Source: &DependencySource{}})
 
+		// record the dependency path and the path key
+		// TODO: 2. use paper's method(a tree) to implement first
 		dependency.Paths[path] = &DependencyInfo{}
 		dependency.Paths[path].Items = items
 
+		// record the operations that each path has
+		// TODO: 1. add the all methods first
 		if x.openAPI.Paths[path].GetOperation(http.MethodPost) != nil {
 			dependencyPost := DependencyPost{}
 			dependencyPost.Flows = append(dependencyPost.Flows, &DependencyPostItem{Method: http.MethodGet})
@@ -438,6 +457,11 @@ func (x *HsuanFuzz) initializeDependencyYAML(p string) {
 
 }
 
+/*
+ * init all example
+ * 1. get parameter example
+ * 2. get body example
+ */
 func (x *HsuanFuzz) initializeInfoYAML(p string) {
 
 	pathInfos := PathInfo{}

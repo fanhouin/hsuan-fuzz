@@ -15,7 +15,7 @@ var (
 
 func init() {
 
-	flag.StringVar(&openAPIPath, "o", ".", "location of `oenapi` specification ")
+	flag.StringVar(&openAPIPath, "o", ".", "location of `openapi` specification ")
 	flag.StringVar(&inputPath, "c", ".", "location to save `corpus`")
 	flag.BoolVar(&strictMode, "s", false, "`strict` mode")
 	flag.BoolVar(&guideMode, "g", false, "`guided` mode")

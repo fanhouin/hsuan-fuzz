@@ -21,7 +21,13 @@ type ResponseInfo struct {
 	Body    string
 }
 
-// SendRequest uses our grammar to send the request.
+/*
+ * SendRequest uses our grammar to send the request.
+ * 1. set path id / query / header value
+ * 2. set request body and token value
+ * 3. send the request and get response
+ * 4. save response info
+ */
 func (x *HsuanFuzz) SendRequest(node *base.Node, decode bool) *ResponseInfo {
 
 	// time.Sleep(100 * time.Millisecond)
@@ -33,7 +39,7 @@ func (x *HsuanFuzz) SendRequest(node *base.Node, decode bool) *ResponseInfo {
 	body := ""
 
 	for _, request := range node.Requests {
-
+		// set path id / query / header value
 		if request.Type == openapi3.ParameterInPath || request.Type == openapi3.ParameterInQuery || request.Type == openapi3.ParameterInHeader {
 
 			for k, v := range request.Value.GetFields() {

@@ -33,6 +33,7 @@ type OutputCriteria struct {
 	Properties  map[string]int
 }
 
+// TODO: use fastjson to parse??
 func getJSONKeys(v interface{}) []string {
 	encoded, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
@@ -40,6 +41,7 @@ func getJSONKeys(v interface{}) []string {
 	}
 
 	keys := []string{}
+	// e.g. "key"   :
 	reJSON := regexp.MustCompile(`"([^"]+?)"\s*:`)
 	for _, r := range reJSON.FindAllString(string(encoded), -1) {
 		keys = append(keys, strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(r, "\"", ""), ":", ""), "\\", ""))
@@ -56,16 +58,23 @@ func isWithinThresholds(a int, b int) bool {
 	return float64(float64(a)/float64(b)) >= threshold
 }
 
+/*
+ * Get TCL
+ * according the input / output criteria,
+ * to count the coverage level
+ */
 func (x *HsuanFuzz) getCoverageLevels(mapInfos map[uint32][]*ResponseInfo) Coverage {
 	/* exclude */
 	// exclusionCodes := []int{401, 403, 500}
 	// exclusionTypes := []string{"", "xml", "html"}
 
 	// map[Path][Method]Criteria
+	// TODO: It can set to global variable
 	goals := map[string]map[string]Criteria{}
 	seeds := map[string]map[string]Criteria{}
 	tmpLevels := map[string]map[string]int{}
 
+	// TODO: Init it
 	for path := range x.openAPI.Paths {
 
 		goals[path] = map[string]Criteria{}
@@ -95,6 +104,7 @@ func (x *HsuanFuzz) getCoverageLevels(mapInfos map[uint32][]*ResponseInfo) Cover
 					}
 
 					// Request Parameters
+					// TODO: can use the info.yml?
 					ex, err := example.GetBodyExample(example.ModeRequest, content)
 					if err != nil {
 						if x.strictMode {
@@ -174,6 +184,7 @@ func (x *HsuanFuzz) getCoverageLevels(mapInfos map[uint32][]*ResponseInfo) Cover
 	}
 
 	// Response Information
+	// Check the real response info
 	for _, infos := range mapInfos {
 
 		for _, info := range infos {
@@ -193,6 +204,7 @@ func (x *HsuanFuzz) getCoverageLevels(mapInfos map[uint32][]*ResponseInfo) Cover
 
 				// Request Types
 				// JSON only
+				// TODO: add more types
 				if strings.Contains(strings.ToLower(request.Type), "json") {
 					ic.Types["json"]++
 				}
@@ -213,6 +225,7 @@ func (x *HsuanFuzz) getCoverageLevels(mapInfos map[uint32][]*ResponseInfo) Cover
 
 			// Response Types
 			// JSON only
+			// TODO: add more types, e.g. xml
 			if strings.Contains(strings.ToLower(info.Type), "json") {
 				oc.Types["json"]++
 			}
@@ -301,7 +314,10 @@ func (x *HsuanFuzz) getCoverageLevels(mapInfos map[uint32][]*ResponseInfo) Cover
 				}
 			}
 
-			/* Parameter coverage: To achieve 100% parameter coverage, all input parameters of every operation must be used at least once. Exercising different combinations of parameters is desirable, but not strictly necessary to achieve 100% of coverage under this criterion.*/
+			/* Parameter coverage: To achieve 100% parameter coverage,
+			all input parameters of every operation must be used at least once.
+			Exercising different combinations of parameters is desirable,
+			but not strictly necessary to achieve 100% of coverage under this criterion.*/
 			if next {
 
 				total := 0
@@ -412,6 +428,7 @@ func (x *HsuanFuzz) getCoverageLevels(mapInfos map[uint32][]*ResponseInfo) Cover
 
 	cov := Coverage{}
 
+	// TODO: need to initialize
 	for _, path := range x.sortedPaths {
 
 		for _, method := range operationsOrder {

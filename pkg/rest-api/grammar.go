@@ -11,12 +11,18 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+/*
+ * generate all parameter example of the request sequence
+ * 1. Record the dependencires of each path as an hashmap(orders)
+ * 2. Generate the request sequences by operationsOrder(fix order)
+ */
 func (x *HsuanFuzz) generateGrammar() {
 
 	// Get path order
 	orders := map[string][]string{}
+	// TODO: avoid the duplicate paths?
 	for path, info := range x.dependency.Paths {
-		// orders 記錄每一個path的dependent，為一個array
+		// Record the dependencires of each path as an hashmap
 		orders[path] = append(x.getOperationFlows(info), path)
 
 	}
@@ -30,9 +36,7 @@ func (x *HsuanFuzz) generateGrammar() {
 	// Use path order to get operations
 	nodes := []*base.Node{}
 	group := uint32(1)
-	// sortedpaths是一開始openapi收集到的path
 	for _, p := range x.sortedPaths {
-
 		dels := []*base.Node{}
 		for _, path := range orders[p] {
 			// operationsOrder是request seq，已經是fix的是seq
@@ -54,8 +58,14 @@ func (x *HsuanFuzz) generateGrammar() {
 
 }
 
+/*
+ * new a node that it has parameter value
+ * 1. get the operation of the openapi
+ * 2. get the parameter structure of the operation and path
+ * 3. get parameter example
+ * 4. define a node
+ */
 func (x *HsuanFuzz) newNode(group uint32, path string, method string) []*base.Node {
-	// operatoin是直接openapi中取的operation
 	operation := x.openAPI.Paths[path].GetOperation(method)
 	if operation == nil {
 		return nil
@@ -93,6 +103,10 @@ func (x *HsuanFuzz) newNode(group uint32, path string, method string) []*base.No
 
 }
 
+/*
+ * Get parameter / body request example, use the protobuf struct
+ * 1. get paramter/body request example, change string value to be base64
+ */
 func (x *HsuanFuzz) getRequestParameters(ps map[string]*openapi3.ParameterRef, rb *openapi3.RequestBodyRef) []*base.Request {
 
 	requests := []*base.Request{}
@@ -188,6 +202,10 @@ func (x *HsuanFuzz) getRequestParameters(ps map[string]*openapi3.ParameterRef, r
 	return requests
 }
 
+/*
+ * Recursively collect path dependencies
+ * Need to complete the Denpendency.yml
+ */
 func (x *HsuanFuzz) getOperationFlows(info *DependencyInfo) []string {
 
 	// Incorrect dependency will lead to infinite loop or panic.
