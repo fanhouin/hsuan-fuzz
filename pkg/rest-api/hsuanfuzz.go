@@ -24,7 +24,7 @@ import (
 // https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.3.md
 
 // TODO https://github.com/golang/lint
-// TODO XML to JSON
+// TODO XML to JSON
 // TODO: *openapi3.ExtensionProps
 // TODO: Example 不要放進grammar => 直接放這次 send 的 value
 // TODO: 當 quicktest 再取 => 暫時不做
